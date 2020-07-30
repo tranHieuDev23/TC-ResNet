@@ -1,5 +1,5 @@
 from keras import Model
-from keras.layers import Input, Conv1D, ReLU, BatchNormalization, Add, AveragePooling1D, Dense, Flatten
+from keras.layers import Input, Conv1D, ReLU, BatchNormalization, Add, AveragePooling1D, Dense, Flatten, Dropout
 
 
 def get_residual_block_type_one(input_tensor, c, k):
@@ -36,6 +36,9 @@ def get_residual_block_type_two(input_tensor, c, k):
     return x
 
 
+DROPOUT_RATE = 0.5
+
+
 def get_tc_resnet_8(input_shape, num_classes, k):
     input_layer = Input(input_shape)
     x = Conv1D(int(16 * k), 3, strides=1, use_bias=False,
@@ -45,6 +48,7 @@ def get_tc_resnet_8(input_shape, num_classes, k):
     x = get_residual_block_type_two(x, 48, k)
     x = AveragePooling1D(3, 1)(x)
     x = Flatten()(x)
+    x = Dropout(DROPOUT_RATE)(x)
     output_layer = Dense(num_classes, activation='softmax')(x)
     return Model(inputs=input_layer, outputs=output_layer)
 
@@ -61,5 +65,6 @@ def get_tc_resnet_14(input_shape, num_classes, k):
     x = get_residual_block_type_one(x, 48, k)
     x = AveragePooling1D(3, 1)(x)
     x = Flatten()(x)
+    x = Dropout(DROPOUT_RATE)(x)
     output_layer = Dense(num_classes, activation='softmax')(x)
     return Model(inputs=input_layer, outputs=output_layer)

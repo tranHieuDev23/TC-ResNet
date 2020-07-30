@@ -6,6 +6,7 @@ from process_data import process_file, generate_noisy_sample
 import numpy as np
 from itertools import zip_longest
 import librosa
+from random import randint
 
 
 def __load_audio_filenames_with_class__(root_folder):
@@ -44,26 +45,9 @@ def __load_subset_filenames__(root_folder, filename):
     return set(subset_list)
 
 
-def __load_background_noises__(root_folder):
-    noises = []
-    noise_folder = join(root_folder, '_background_noise_')
-    for item in listdir(noise_folder):
-        if (not item.endswith('.wav')):
-            continue
-        samples, sr = librosa.load(join(noise_folder, item), sr=None)
-        noises.append(samples)
-    return noises
-
-
 def load_data_from_folder(root_folder):
     filenames, class_ids, classes = __load_audio_filenames_with_class__(
         root_folder)
-    testing_set = __load_subset_filenames__(
-        root_folder, 'testing_list.txt')
-    validation_set = __load_subset_filenames__(
-        root_folder, 'validation_list.txt')
-    noises = __load_background_noises__('dataset')
-    noises.append([])
     dataset_size = len(filenames)
     X_train = []
     y_train = []
@@ -72,10 +56,10 @@ def load_data_from_folder(root_folder):
     X_validation = []
     y_validation = []
     pool = Pool(cpu_count() - 1)
-    for (results, filepath, class_id) in tqdm(pool.imap_unordered(process_file, zip_longest(filenames, class_ids)), total=dataset_size):
+    for (results, filepath, class_id, random_roll) in tqdm(pool.imap_unordered(process_file, zip_longest(filenames, class_ids)), total=dataset_size):
         filepath = normpath(filepath)
-        is_testing = filepath in testing_set
-        is_validation = filepath in validation_set
+        is_testing = 1 <= random_roll and random_roll <= 10
+        is_validation = 11 <= random_roll and random_roll <= 20
         for item in results:
             if (is_testing):
                 X_test.append(item)

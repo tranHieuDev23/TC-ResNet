@@ -4,6 +4,12 @@ from os.path import join
 import random
 import math
 import numpy as np
+from random import seed, randint
+
+
+AUDIO_LENGTH = 2
+
+seed(163)
 
 
 def __load_background_noises__(root_folder):
@@ -18,7 +24,6 @@ def __load_background_noises__(root_folder):
 
 
 noises = __load_background_noises__('dataset')
-noises.append([])
 
 
 def generate_noisy_sample(samples, noise):
@@ -40,17 +45,30 @@ def generate_noisy_sample(samples, noise):
         (1.0 - noise_coeff) * new_samples
     return new_samples
 
+
 def get_mfcc(samples, sr):
     return librosa.feature.mfcc(samples, sr=sr, n_mfcc=40, n_fft=400, hop_length=100).transpose()
+
 
 def process_file(argv):
     (filepath, class_id) = argv
     results = []
     samples, sr = librosa.load(filepath, sr=None)
-    if (len(samples) != sr):
-        return results, filepath, class_id
-    for item in noises:
-        new_samples = generate_noisy_sample(samples, item)
-        mfcc = get_mfcc(new_samples, sr)
-        results.append(mfcc)
-    return results, filepath, class_id
+    samples_len = len(samples)
+    if (samples_len > sr * AUDIO_LENGTH):
+        samples = samples[- sr * AUDIO_LENGTH:]
+    elif (samples_len < sr * AUDIO_LENGTH):
+        temp = np.zeros((sr * AUDIO_LENGTH))
+        temp[:samples_len] = samples
+        samples = temp
+    mfcc = get_mfcc(samples, sr)
+    results.append(mfcc)
+    random_roll = randint(1, 100)
+    is_testing = 1 <= random_roll and random_roll <= 10
+    is_validation = 11 <= random_roll and random_roll <= 20
+    if (not is_testing and not is_validation):
+        for item in noises:
+            new_samples = generate_noisy_sample(samples, item)
+            mfcc = get_mfcc(new_samples, sr)
+            results.append(mfcc)
+    return results, filepath, class_id, random_roll
